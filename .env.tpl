@@ -12,7 +12,7 @@ PROVIDER_PORT=
 PROVIDER_URL=
 
 # Schelling Coin Address (if want to reuse already deployed instance)
-SCHELLING_COIN_ADDRESS=
+RAZOR_ADDRESS=
 
 # List of Stakers
 STAKER_ADDRESSES=

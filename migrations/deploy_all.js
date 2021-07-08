@@ -7,7 +7,7 @@ const stakeManagerMigration = require('./src/5_deploy_stake_manager');
 const rewardManagerMigration = require('./src/6_deploy_reward_manager');
 const voteManagerMigration = require('./src/7_deploy_vote_manager');
 const delegatorMigration = require('./src/8_deploy_delegator');
-const schellingCoinAndFacuetMigration = require('./src/9_deploy_schelling_coin_and_faucet');
+const RAZORAndFacuetMigration = require('./src/9_deploy_razor_and_faucet');
 const postDeploymentSetup = require('./src/postDeploymentSetup');
 
 async function main() {
@@ -20,7 +20,7 @@ async function main() {
   await rewardManagerMigration();
   await voteManagerMigration();
   await delegatorMigration();
-  await schellingCoinAndFacuetMigration();
+  await RAZORAndFacuetMigration();
   await postDeploymentSetup();
 }
 

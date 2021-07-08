@@ -58,13 +58,13 @@ const isElectedProposer = async (iteration, biggestStake, stake, stakerId, numSt
   return true;
 };
 
-const getBiggestStakeAndId = async (schelling) => {
-  const numStakers = await schelling.numStakers();
+const getBiggestStakeAndId = async (razor) => {
+  const numStakers = await razor.numStakers();
   let biggestStake = toBigNumber('0');
   let biggestStakerId = toBigNumber('0');
 
   for (let i = 1; i <= numStakers; i++) {
-    const { stake } = await schelling.stakers(i);
+    const { stake } = await razor.stakers(i);
 
     if (stake.gt(biggestStakerId)) {
       biggestStake = stake;

@@ -27,7 +27,7 @@ describe('VoteManager', function () {
     let blockManager;
     let parameters;
     let random;
-    let schellingCoin;
+    let razor;
     let stakeManager;
     let rewardManager;
     let voteManager;
@@ -35,12 +35,12 @@ describe('VoteManager', function () {
 
     before(async () => {
       ({
-        blockManager, parameters, random, schellingCoin, stakeManager, rewardManager, voteManager, initializeContracts,
+        blockManager, parameters, random, razor, stakeManager, rewardManager, voteManager, initializeContracts,
       } = await setupContracts());
       signers = await ethers.getSigners();
     });
 
-    describe('SchellingCoin', async function () {
+    describe('razor', async function () {
       it('admin role should be granted', async () => {
         const isAdminRoleGranted = await stakeManager.hasRole(DEFAULT_ADMIN_ROLE_HASH, signers[0].address);
         assert(isAdminRoleGranted === true, 'Admin role was not Granted');
@@ -70,14 +70,14 @@ describe('VoteManager', function () {
         await Promise.all(await initializeContracts());
 
         await mineToNextEpoch();
-        await schellingCoin.transfer(signers[3].address, tokenAmount('423000'));
-        await schellingCoin.transfer(signers[4].address, tokenAmount('19000'));
-        await schellingCoin.transfer(signers[5].address, tokenAmount('1000'));
-        await schellingCoin.transfer(signers[6].address, tokenAmount('1000'));
-        await schellingCoin.connect(signers[3]).approve(stakeManager.address, tokenAmount('420000'));
-        await schellingCoin.connect(signers[4]).approve(stakeManager.address, tokenAmount('19000'));
-        await schellingCoin.connect(signers[5]).approve(stakeManager.address, tokenAmount('1000'));
-        await schellingCoin.connect(signers[6]).approve(stakeManager.address, tokenAmount('1000'));
+        await razor.transfer(signers[3].address, tokenAmount('423000'));
+        await razor.transfer(signers[4].address, tokenAmount('19000'));
+        await razor.transfer(signers[5].address, tokenAmount('1000'));
+        await razor.transfer(signers[6].address, tokenAmount('1000'));
+        await razor.connect(signers[3]).approve(stakeManager.address, tokenAmount('420000'));
+        await razor.connect(signers[4]).approve(stakeManager.address, tokenAmount('19000'));
+        await razor.connect(signers[5]).approve(stakeManager.address, tokenAmount('1000'));
+        await razor.connect(signers[6]).approve(stakeManager.address, tokenAmount('1000'));
         const epoch = await getEpoch();
         await stakeManager.connect(signers[3]).stake(epoch, tokenAmount('420000'));
         await stakeManager.connect(signers[4]).stake(epoch, tokenAmount('19000'));
@@ -316,7 +316,7 @@ describe('VoteManager', function () {
           '0x727d5c9e6d18ed15ce7ac8d3cce6ec8a0e9c02481415c0823ea49d847ccb9ddd',
           signers[4].address);
 
-        const stakeAcc10 = await schellingCoin.connect(signers[10]).balanceOf(signers[10].address);
+        const stakeAcc10 = await razor.connect(signers[10]).balanceOf(signers[10].address);
         const slashPenaltyAmount = (stakeBeforeAcc4.mul((await parameters.slashPenaltyNum()))).div(await parameters.slashPenaltyDenom());
         assertBNEqual((await stakeManager.stakers(stakerIdAcc4)).stake, stakeBeforeAcc4.sub(slashPenaltyAmount), 'stake should be less by slashPenalty');
         assertBNEqual(stakeAcc10, slashPenaltyAmount.div('2'), 'the bounty hunter should receive half of the slashPenaltyAmount of account 4');
@@ -373,13 +373,13 @@ describe('VoteManager', function () {
         for (let i = 0; i < votes.length; i++) {
           proof.push(tree.getProofPath(i, true, true));
         }
-        const balanceBeforeAcc10 = await schellingCoin.balanceOf(signers[10].address);
+        const balanceBeforeAcc10 = await razor.balanceOf(signers[10].address);
 
         await voteManager.connect(signers[10]).reveal(epoch, tree.root(), votes, proof,
           '0x727d5c9e6d18ed15ce7ac8d3cce6ec8a0e9c02481415c0823ea49d847ccb9ddd',
           signers[6].address);
 
-        const balanceAfterAcc10 = await schellingCoin.balanceOf(signers[10].address);
+        const balanceAfterAcc10 = await razor.balanceOf(signers[10].address);
         const slashPenaltyAmount = stakeBeforeAcc6.mul(((await parameters.slashPenaltyNum())).div(await parameters.slashPenaltyDenom()));
         const stakeAcc6 = (await stakeManager.stakers(stakerIdAcc6)).stake;
         assertBNEqual(stakeAcc6, toBigNumber('0'), 'Stake of account 6 should be zero');
@@ -409,13 +409,13 @@ describe('VoteManager', function () {
         for (let i = 0; i < votes.length; i++) {
           proof.push(tree.getProofPath(i, true, true));
         }
-        const balanceBeforeAcc10 = await schellingCoin.balanceOf(signers[10].address);
+        const balanceBeforeAcc10 = await razor.balanceOf(signers[10].address);
 
         await voteManager.connect(signers[10]).reveal(epoch, tree.root(), votes, proof,
           '0x727d5c9e6d18ed15ce7ac8d3cce6ec8a0e9c02481415c0823ea49d847ccb9ddd',
           signers[5].address);
 
-        const balanceAfterAcc10 = await schellingCoin.balanceOf(signers[10].address);
+        const balanceAfterAcc10 = await razor.balanceOf(signers[10].address);
         const slashPenaltyAmount = (stakeBeforeAcc5.mul((await parameters.slashPenaltyNum()))).div(await parameters.slashPenaltyDenom());
         const stakeAfterAcc5 = (await stakeManager.stakers(stakerIdAcc5)).stake;
         assertBNEqual(stakeAfterAcc5, stakeBeforeAcc5.sub(slashPenaltyAmount), 'Stake of account 5 should lessen by slashPenaltyAmount');

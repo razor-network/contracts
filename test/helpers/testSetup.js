@@ -1,5 +1,7 @@
 const { BLOCK_REWARD } = require('./constants');
 
+const { BigNumber } = ethers;
+const initialSupply = (BigNumber.from(10).pow(BigNumber.from(27)));
 const setupContracts = async () => {
   const Structs = await ethers.getContractFactory('Structs');
   const structs = await Structs.deploy();
@@ -19,7 +21,7 @@ const setupContracts = async () => {
   const Delegator = await ethers.getContractFactory('Delegator');
   const Faucet = await ethers.getContractFactory('Faucet');
   const AssetManager = await ethers.getContractFactory('AssetManager');
-  const SchellingCoin = await ethers.getContractFactory('SchellingCoin');
+  const RAZOR = await ethers.getContractFactory('RAZOR');
   const StakeManager = await ethers.getContractFactory('StakeManager');
   const RewardManager = await ethers.getContractFactory('RewardManager');
   const VoteManager = await ethers.getContractFactory('VoteManager');
@@ -32,15 +34,15 @@ const setupContracts = async () => {
   const stakeManager = await StakeManager.deploy();
   const rewardManager = await RewardManager.deploy(BLOCK_REWARD.toHexString());
   const voteManager = await VoteManager.deploy();
-  const schellingCoin = await SchellingCoin.deploy();
-  const faucet = await Faucet.deploy(schellingCoin.address);
+  const razor = await RAZOR.deploy(initialSupply);
+  const faucet = await Faucet.deploy(razor.address);
 
   await parameters.deployed();
   await blockManager.deployed();
   await delegator.deployed();
   await faucet.deployed();
   await assetManager.deployed();
-  await schellingCoin.deployed();
+  await razor.deployed();
   await stakeManager.deployed();
   await rewardManager.deployed();
   await voteManager.deployed();
@@ -48,7 +50,7 @@ const setupContracts = async () => {
   const initializeContracts = async () => [
     blockManager.initialize(stakeManager.address, rewardManager.address, voteManager.address, assetManager.address, parameters.address),
     voteManager.initialize(stakeManager.address, rewardManager.address, blockManager.address, parameters.address),
-    stakeManager.initialize(schellingCoin.address, rewardManager.address, voteManager.address, parameters.address),
+    stakeManager.initialize(razor.address, rewardManager.address, voteManager.address, parameters.address),
     rewardManager.initialize(stakeManager.address, voteManager.address, blockManager.address, parameters.address),
 
     assetManager.grantRole(await parameters.getAssetConfirmerHash(), blockManager.address),
@@ -69,7 +71,7 @@ const setupContracts = async () => {
     faucet,
     assetManager,
     random,
-    schellingCoin,
+    razor,
     stakeManager,
     rewardManager,
     structs,

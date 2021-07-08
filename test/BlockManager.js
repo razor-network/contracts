@@ -27,7 +27,7 @@ describe('BlockManager', function () {
   let blockManager;
   let assetManager;
   let random;
-  let schellingCoin;
+  let razor;
   let stakeManager;
   let rewardManager;
   let parameters;
@@ -40,7 +40,7 @@ describe('BlockManager', function () {
       parameters,
       assetManager,
       random,
-      schellingCoin,
+      razor,
       stakeManager,
       rewardManager,
       voteManager,
@@ -49,7 +49,7 @@ describe('BlockManager', function () {
     signers = await ethers.getSigners();
   });
 
-  describe('SchellingCoin', async () => {
+  describe('razor', async () => {
     it('admin role should be granted', async () => {
       const isAdminRoleGranted = await blockManager.hasRole(DEFAULT_ADMIN_ROLE_HASH, signers[0].address);
       assert(isAdminRoleGranted === true, 'Admin role was not Granted');
@@ -89,18 +89,18 @@ describe('BlockManager', function () {
       await Promise.all(await initializeContracts());
 
       await mineToNextEpoch();
-      await schellingCoin.transfer(signers[5].address, tokenAmount('423000'));
-      await schellingCoin.transfer(signers[6].address, tokenAmount('19000'));
-      await schellingCoin.transfer(signers[8].address, tokenAmount('18000'));
+      await razor.transfer(signers[5].address, tokenAmount('423000'));
+      await razor.transfer(signers[6].address, tokenAmount('19000'));
+      await razor.transfer(signers[8].address, tokenAmount('18000'));
 
-      await schellingCoin.connect(signers[5]).approve(stakeManager.address, tokenAmount('420000'));
+      await razor.connect(signers[5]).approve(stakeManager.address, tokenAmount('420000'));
       const epoch = await getEpoch();
       await stakeManager.connect(signers[5]).stake(epoch, tokenAmount('420000'));
 
-      await schellingCoin.connect(signers[6]).approve(stakeManager.address, tokenAmount('18000'));
+      await razor.connect(signers[6]).approve(stakeManager.address, tokenAmount('18000'));
       await stakeManager.connect(signers[6]).stake(epoch, tokenAmount('18000'));
 
-      await schellingCoin.connect(signers[8]).approve(stakeManager.address, tokenAmount('18000'));
+      await razor.connect(signers[8]).approve(stakeManager.address, tokenAmount('18000'));
       await stakeManager.connect(signers[8]).stake(epoch, tokenAmount('18000'));
 
       const votes = [100, 200, 300, 400, 500, 600, 700, 800, 900];
@@ -260,7 +260,7 @@ describe('BlockManager', function () {
         ? 1 : 0;
       const stakerIdAccount = await stakeManager.stakerIds(signers[5].address);
       const stakeBeforeAcc5 = (await stakeManager.getStaker(stakerIdAccount)).stake;
-      const balanceBeforeAcc19 = await schellingCoin.balanceOf(signers[19].address);
+      const balanceBeforeAcc19 = await razor.balanceOf(signers[19].address);
 
       await blockManager.connect(signers[19]).finalizeDispute(epoch, firstProposedBlockIndex);
       const proposedBlock = await blockManager.proposedBlocks(epoch, firstProposedBlockIndex);
@@ -270,16 +270,16 @@ describe('BlockManager', function () {
       const slashPenaltyAmount = (stakeBeforeAcc5.mul((await parameters.slashPenaltyNum()))).div(await parameters.slashPenaltyDenom());
 
       assertBNEqual((await stakeManager.getStaker(stakerIdAccount)).stake, stakeBeforeAcc5.sub(slashPenaltyAmount));
-      assertBNEqual(await schellingCoin.balanceOf(signers[19].address), balanceBeforeAcc19.add(slashPenaltyAmount.div('2')));
+      assertBNEqual(await razor.balanceOf(signers[19].address), balanceBeforeAcc19.add(slashPenaltyAmount.div('2')));
     });
 
     it('block proposed by account 6 should be confirmed', async function () {
       await mineToNextState();
-      await schellingCoin.connect(signers[0]).transfer(signers[7].address, tokenAmount('20000'));
+      await razor.connect(signers[0]).transfer(signers[7].address, tokenAmount('20000'));
 
       const epoch = await getEpoch();
 
-      await schellingCoin.connect(signers[7]).approve(stakeManager.address, tokenAmount('19000'));
+      await razor.connect(signers[7]).approve(stakeManager.address, tokenAmount('19000'));
       await stakeManager.connect(signers[7]).stake(epoch, tokenAmount('19000'));
 
       const votes = [1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000];
@@ -461,7 +461,7 @@ describe('BlockManager', function () {
       await mineToNextEpoch();
       const epoch = await getEpoch();
 
-      await schellingCoin.connect(signers[19]).approve(stakeManager.address, tokenAmount('19000'));
+      await razor.connect(signers[19]).approve(stakeManager.address, tokenAmount('19000'));
       await stakeManager.connect(signers[19]).stake(epoch, tokenAmount('19000'));
 
       const votes = [1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000];
@@ -525,14 +525,14 @@ describe('BlockManager', function () {
     it('should be able to dispute in batches', async function () {
       // Commit
       await mineToNextEpoch();
-      await schellingCoin.transfer(signers[2].address, tokenAmount('423000'));
-      await schellingCoin.transfer(signers[3].address, tokenAmount('19000'));
+      await razor.transfer(signers[2].address, tokenAmount('423000'));
+      await razor.transfer(signers[3].address, tokenAmount('19000'));
       let epoch = await getEpoch();
 
-      await schellingCoin.connect(signers[2]).approve(stakeManager.address, tokenAmount('420000'));
+      await razor.connect(signers[2]).approve(stakeManager.address, tokenAmount('420000'));
       await stakeManager.connect(signers[2]).stake(epoch, tokenAmount('420000'));
 
-      await schellingCoin.connect(signers[3]).approve(stakeManager.address, tokenAmount('18000'));
+      await razor.connect(signers[3]).approve(stakeManager.address, tokenAmount('18000'));
       await stakeManager.connect(signers[3]).stake(epoch, tokenAmount('18000'));
       const votes = [100, 200, 300, 400, 500, 600, 700, 800, 900];
       const tree = merkle('keccak256').sync(votes);
