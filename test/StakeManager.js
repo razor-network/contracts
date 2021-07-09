@@ -202,6 +202,35 @@ describe('StakeManager', function () {
       assertBNEqual(await schellingCoin.balanceOf(staker._address), prevBalance.add(rAmount), 'Balance should be equal');
     });
 
+    it('should allow staker to add stake after withdraw or slash both', async function () {
+      // signers[1] has already withdrawn
+      let staker = await stakeManager.getStaker(1);
+      const epoch = await getEpoch();
+      const stake = tokenAmount('20000');
+      const stakerIdAcc1 = await stakeManager.stakerIds(signers[1].address);
+      const stakeBeforeAcc1 = (await stakeManager.stakers(stakerIdAcc1)).stake;
+      await schellingCoin.connect(signers[1]).approve(stakeManager.address, stake);
+      // adding stake after withdraw
+      await stakeManager.connect(signers[1]).stake(epoch, stake);
+      const stakeAfterAcc1 = (await stakeManager.stakers(stakerIdAcc1)).stake;
+      assertBNEqual(stakeAfterAcc1, stakeBeforeAcc1.add(stake), 'Stake did not increase on staking after withdraw');
+
+      await rewardManager.grantRole(await parameters.getRewardModifierHash(), signers[0].address);
+      // slashing signers[1]
+      await rewardManager.slash(1, signers[10].address, epoch);
+
+      const slashPenaltyAmount = (stakeAfterAcc1.mul((await parameters.slashPenaltyNum()))).div(await parameters.slashPenaltyDenom());
+      staker = await stakeManager.getStaker(1);
+      const stakeAfterSlash = (await stakeManager.stakers(stakerIdAcc1)).stake;
+      assertBNEqual(stakeAfterSlash, stakeAfterAcc1.sub(slashPenaltyAmount), 'Stake should be less by slashPenalty');
+
+      const stake2 = tokenAmount('20000');
+      await schellingCoin.connect(signers[1]).approve(stakeManager.address, stake2);
+      await stakeManager.connect(signers[1]).stake(epoch, stake2);
+      staker = await stakeManager.getStaker(1);
+      assertBNEqual(staker.stake, stakeAfterSlash.add(stake2), 'Stake did not increase on staking after slash');
+    });
+
     it('Staker should not be able to withdraw after withdraw lock period if voted in withdraw lock period', async function () {
       // @notice: Checking for Staker 2
       const stake = tokenAmount('19000');

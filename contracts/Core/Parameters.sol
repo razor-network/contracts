@@ -11,7 +11,7 @@ contract Parameters is IParameters, ACL {
     // penalty not reveal = 0.01% per epch
     uint256 public override penaltyNotRevealNum = 1;
     uint256 public override penaltyNotRevealDenom = 10000;
-    uint256 public override slashPenaltyNum = 10000;
+    uint256 public override slashPenaltyNum = 5000;
     uint256 public override slashPenaltyDenom = 10000;
 
     uint256 public override minStake = 100 * (10 ** 18);
