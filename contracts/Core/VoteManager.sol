@@ -6,10 +6,12 @@ import "./interface/IParameters.sol";
 import "./interface/IStakeManager.sol";
 import "./interface/IRewardManager.sol";
 import "./interface/IBlockManager.sol";
+import "./interface/IAssetManager.sol";
 import "./storage/VoteStorage.sol";
 import "../Initializable.sol";
 import "./ACL.sol";
-
+import "../lib/Random.sol";
+import "hardhat/console.sol";
 
 contract VoteManager is Initializable, ACL, VoteStorage {
 
@@ -17,9 +19,10 @@ contract VoteManager is Initializable, ACL, VoteStorage {
     IStakeManager public stakeManager;
     IRewardManager public rewardManager;
     IBlockManager public blockManager;
+    IAssetManager public assetManager;
 
     event Committed(uint256 epoch, uint256 stakerId, bytes32 commitment, uint256 timestamp);
-    event Revealed(uint256 epoch, uint256 stakerId, uint256 stake, uint256[] values, uint256 timestamp);
+    event Revealed(uint256 epoch, uint256 stakerId, uint256 stake, Structs.AssignedAsset[] values, uint256 timestamp);
 
     modifier checkEpoch (uint256 epoch) {
         require(epoch == parameters.getEpoch(), "incorrect epoch");
@@ -35,13 +38,15 @@ contract VoteManager is Initializable, ACL, VoteStorage {
         address stakeManagerAddress,
         address rewardManagerAddress,
         address blockManagerAddress,
-        address parametersAddress
+        address parametersAddress,
+        address assetManagerAddress
     ) external initializer onlyRole(DEFAULT_ADMIN_ROLE)
     {
         stakeManager = IStakeManager(stakeManagerAddress);
         rewardManager = IRewardManager(rewardManagerAddress);
         blockManager = IBlockManager(blockManagerAddress);
         parameters = IParameters(parametersAddress);
+        assetManager = IAssetManager(assetManagerAddress);
     }
     
 
@@ -65,11 +70,10 @@ contract VoteManager is Initializable, ACL, VoteStorage {
         }
     }
 
-
     function reveal (
         uint256 epoch,
         bytes32 root,
-        uint256[] memory values,
+        Structs.AssignedAsset [] memory values,
         bytes32[][] memory proofs, bytes32 secret,
         address stakerAddress
     )
@@ -83,17 +87,19 @@ contract VoteManager is Initializable, ACL, VoteStorage {
         require(commitments[epoch][thisStakerId] != 0x0, "not commited or already revealed");
         require(keccak256(abi.encodePacked(epoch, root, secret)) == commitments[epoch][thisStakerId],
                 "incorrect secret/value");
-        
+        require(values.length == parameters.maxAssetsPerStaker(), "Revealed assets not equal to required assets per staker");
+
         //if revealing self
         if (msg.sender == stakerAddress) {
             require(parameters.getState() == parameters.reveal(), "Not reveal state");
             require(thisStaker.stake > 0, "nonpositive stake");
             for (uint256 i = 0; i < values.length; i++) {
-                require(MerkleProof.verify(proofs[i], root, keccak256(abi.encodePacked(values[i]))),
+                require(isAssetAllotedToStaker(thisStakerId, i, values[i].id), "Revealed asset not alloted");
+                require(MerkleProof.verify(proofs[i], root, keccak256(abi.encodePacked(values[i].value))),
                 "invalid merkle proof");
-                votes[epoch][thisStakerId][i] = Structs.Vote(values[i], thisStaker.stake);
-                voteWeights[epoch][i][values[i]] = voteWeights[epoch][i][values[i]]+(thisStaker.stake);
-                totalStakeRevealed[epoch][i] = totalStakeRevealed[epoch][i]+(thisStaker.stake);
+                votes[epoch][thisStakerId][values[i].id-1] = Structs.Vote(values[i].value, thisStaker.stake);
+                voteWeights[epoch][values[i].id-1][values[i].value] = voteWeights[epoch][values[i].id-1][values[i].value]+(thisStaker.stake);
+                totalStakeRevealed[epoch][values[i].id-1] = totalStakeRevealed[epoch][values[i].id-1]+(thisStaker.stake);
             }
 
             rewardManager.giveRewards(thisStakerId, epoch);
@@ -110,6 +116,12 @@ contract VoteManager is Initializable, ACL, VoteStorage {
         }
     }
 
+    function isAssetAllotedToStaker(uint256 stakerId, uint256 iteration, uint256 assetId) public view initialized returns (bool)
+    {   
+        // numBlocks = 10, max= numAssets, seed = iteration+stakerId, epochLength
+        if ((Random.prng(10, assetManager.getNumAssets(), keccak256(abi.encode( iteration + stakerId)), parameters.epochLength())+(1)) == assetId) return true;
+        return false;
+    }
     function getCommitment(uint256 epoch, uint256 stakerId) public view returns(bytes32) {
         //epoch -> stakerid -> commitment
         return(commitments[epoch][stakerId]);

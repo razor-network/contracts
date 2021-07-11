@@ -11,6 +11,7 @@ interface IVoteManager {
     function reveal(
         uint256 epoch,
         bytes32 root,
+        uint256[] calldata assetIds,
         uint256[] calldata values,
         bytes32[][] calldata proofs,
         bytes32 secret,
@@ -35,4 +36,6 @@ interface IVoteManager {
         uint256 assetId,
         uint256 voteValue
     ) external view returns(uint256);
+
+    function TEST_getAssetIds(uint256 stakerId) external;
 }

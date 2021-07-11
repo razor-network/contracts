@@ -22,7 +22,12 @@ const setupContracts = async () => {
   const SchellingCoin = await ethers.getContractFactory('SchellingCoin');
   const StakeManager = await ethers.getContractFactory('StakeManager');
   const RewardManager = await ethers.getContractFactory('RewardManager');
-  const VoteManager = await ethers.getContractFactory('VoteManager');
+
+  const VoteManager = await ethers.getContractFactory('VoteManager', {
+    libraries: {
+      Random: random.address,
+    }
+  });
 
   const parameters = await Parameters.deploy();
   const blockManager = await BlockManager.deploy();
@@ -47,10 +52,10 @@ const setupContracts = async () => {
 
   const initializeContracts = async () => [
     blockManager.initialize(stakeManager.address, rewardManager.address, voteManager.address, assetManager.address, parameters.address),
-    voteManager.initialize(stakeManager.address, rewardManager.address, blockManager.address, parameters.address),
+    voteManager.initialize(stakeManager.address, rewardManager.address, blockManager.address, parameters.address, assetManager.address),
     stakeManager.initialize(schellingCoin.address, rewardManager.address, voteManager.address, parameters.address),
     rewardManager.initialize(stakeManager.address, voteManager.address, blockManager.address, parameters.address),
-
+    
     assetManager.grantRole(await parameters.getAssetConfirmerHash(), blockManager.address),
     blockManager.grantRole(await parameters.getBlockConfirmerHash(), voteManager.address),
     rewardManager.grantRole(await parameters.getRewardModifierHash(), blockManager.address),

@@ -99,6 +99,34 @@ const getState = async () => {
   return state.mod(NUM_STATES).toNumber();
 };
 
+const getAssignedAssets = async (numAssets, stakerId, votes, proofs, maxAssetsPerStaker, random) => {
+  let assignedAssetsVotes = []
+  let assignedAssetsProofs = [];
+
+  const blockHashes = await random.blockHashes(NUM_BLOCKS, EPOCH_LENGTH);
+  let assetId;
+  let seed;
+  for (let i = 0; i < maxAssetsPerStaker; i++) {
+    seed = await web3.utils.soliditySha3(+stakerId + i);
+    assetId = +(await prng(seed, numAssets, blockHashes)) + 1;
+    assignedAssetsVotes.push({ "id": assetId, "value": votes[assetId - 1] });
+    assignedAssetsProofs.push(proofs[assetId - 1]);
+  }
+  return [assignedAssetsVotes, assignedAssetsProofs];
+};
+
+const getNumRevealedAssets = async (assignedAssetsVotes) => {
+  let isExist = {};
+  let numRevealedAssetsForStaker = 0;
+  for (let i = 0; i < assignedAssetsVotes.length; i++) {
+    if (typeof isExist[assignedAssetsVotes[i].id] === "undefined") {
+      isExist[assignedAssetsVotes[i].id] = true;
+      numRevealedAssetsForStaker++;
+    }
+  }
+  return numRevealedAssetsForStaker;
+};
+
 module.exports = {
   calculateDisputesData,
   isElectedProposer,
@@ -110,4 +138,6 @@ module.exports = {
   prngHash,
   toBigNumber,
   tokenAmount,
+  getAssignedAssets,
+  getNumRevealedAssets
 };
