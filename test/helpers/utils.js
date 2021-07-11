@@ -6,10 +6,10 @@ const {
 const toBigNumber = (value) => BigNumber.from(value);
 const tokenAmount = (value) => toBigNumber(value).mul(ONE_ETHER);
 
-const calculateDisputesData = async (voteManager, epoch, sortedVotes, weights) => {
+const calculateDisputesData = async (voteManager, epoch, sortedVotes, weights, assetId) => {
   // See issue https://github.com/ethers-io/ethers.js/issues/407#issuecomment-458360013
   // We should rethink about overloading functions.
-  const totalStakeRevealed = await voteManager['getTotalStakeRevealed(uint256,uint256)'](epoch, 1);
+  const totalStakeRevealed = await voteManager['getTotalStakeRevealed(uint256,uint256)'](epoch, assetId);
   const medianWeight = totalStakeRevealed.div(2);
   const lowerCutoffWeight = totalStakeRevealed.div(4);
   const higherCutoffWeight = totalStakeRevealed.mul(3).div(4);
@@ -20,7 +20,7 @@ const calculateDisputesData = async (voteManager, epoch, sortedVotes, weights) =
 
   for (let i = 0; i < sortedVotes.length; i++) {
     weight = weight.add(weights[i]);
-    if (weight.gt(medianWeight) && median.eq('0')) median = sortedVotes[i];
+    if (weight.gte(medianWeight) && median.eq('0')) median = sortedVotes[i];
     if (weight.gt(lowerCutoffWeight) && lowerCutoff.eq('0')) lowerCutoff = sortedVotes[i];
     if (weight.gt(higherCutoffWeight) && higherCutoff.eq('0')) higherCutoff = sortedVotes[i];
   }

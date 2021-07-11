@@ -11,7 +11,6 @@ import "./storage/VoteStorage.sol";
 import "../Initializable.sol";
 import "./ACL.sol";
 import "../lib/Random.sol";
-import "hardhat/console.sol";
 
 contract VoteManager is Initializable, ACL, VoteStorage {
 

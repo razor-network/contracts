@@ -36,8 +36,8 @@ describe('VoteManager', function () {
     let initializeContracts;
     let revealedAssetsThisEpoch = {};
     let blockThisEpoch = { ids: [], medians: [], lowerCutOffs: [], higherCutOffs: [] };
-    let numRevealedAssetsForStaker = 0;
-
+    let numRevealedAssetsForStaker4 = 0;
+    let numRevealedAssetsForStaker3 = 0;
     before(async () => {
       ({
         blockManager, parameters, random, schellingCoin, stakeManager, rewardManager, voteManager, assetManager, initializeContracts
@@ -87,7 +87,8 @@ describe('VoteManager', function () {
         await stakeManager.connect(signers[3]).stake(epoch, tokenAmount('420000'));
         await stakeManager.connect(signers[4]).stake(epoch, tokenAmount('19000'));
 
-        // Before Staker can commit even if there were no jobs, now as we are moving to assgined jobs, we need to create them first, and then only commit
+        // Before Staker could commit even if there were no jobs, now as we are moving to assgined jobs, we need to create them first, and then only commit
+        await assetManager.grantRole(await parameters.getAssetModifierHash(), signers[0].address);
         const url = 'http://testurl.com';
         const selector = 'selector';
         const name = 'test';
@@ -274,6 +275,7 @@ describe('VoteManager', function () {
         let assignedAssets = await getAssignedAssets(numAssets, stakerIdAcc3, votes, proof, maxAssetsPerStaker, random);
         let assigneedAssetsVotes = assignedAssets[0];
         let assigneedAssetsProofs = assignedAssets[1];
+        numRevealedAssetsForStaker3 = await getNumRevealedAssets(assigneedAssetsVotes);
 
         await voteManager.connect(signers[3]).reveal(epoch, tree.root(), assigneedAssetsVotes, assigneedAssetsProofs,
           '0x727d5c9e6d18ed15ce7ac8d3cce6ec8a0e9c02481415c0823ea49d847ccb9ddd',
@@ -284,8 +286,8 @@ describe('VoteManager', function () {
         let assignedAssets2 = await getAssignedAssets(numAssets, stakerIdAcc4, votes2, proof2, maxAssetsPerStaker, random);
         let assigneedAssetsVotes2 = assignedAssets2[0];
         let assigneedAssetsProofs2 = assignedAssets2[1];
-        numRevealedAssetsForStaker = await getNumRevealedAssets(assigneedAssetsVotes2);
-        console.log(assigneedAssetsVotes2);
+        numRevealedAssetsForStaker4 = await getNumRevealedAssets(assigneedAssetsVotes2);
+
         await voteManager.connect(signers[4]).reveal(epoch, tree2.root(), assigneedAssetsVotes2, assigneedAssetsProofs2,
           '0x727d5c9e6d18ed15ce7ac8d3cce6ec8a0e9c02481415c0823ea49d847ccb9ddd',
           signers[4].address);
@@ -299,6 +301,7 @@ describe('VoteManager', function () {
 
 
         // To Form Block Proposal On basis of revealed assets this epoch
+        revealedAssetsThisEpoch = {}
         for (let i = 0; i < maxAssetsPerStaker; i++) {
           revealedAssetsThisEpoch[assigneedAssetsVotes[i].id] = true;
           revealedAssetsThisEpoch[assigneedAssetsVotes2[i].id] = true;
@@ -357,11 +360,9 @@ describe('VoteManager', function () {
         const stakeAfter2 = (await stakeManager.stakers(stakerIdAcc4)).stake;
         let penalty = toBigNumber('0');
         const den = toBigNumber('1000');
-        for (let i = 0; i < numRevealedAssetsForStaker; i++) {
+        for (let i = 0; i < numRevealedAssetsForStaker4; i++) {
           penalty = penalty.add((stakeBefore2.div(den)));
         }
-        console.log(numRevealedAssetsForStaker);
-        console.log(stakeBefore2 / 1, stakeAfter2 / 1, penalty / 1);
         assertBNLessThan(stakeBefore, stakeAfter, 'Not rewarded');
         assertBNEqual(stakeBefore2.sub(penalty), stakeAfter2, 'Penalty should be applied');
         const stakeGettingReward = await rewardManager.stakeGettingReward();
@@ -428,15 +429,14 @@ describe('VoteManager', function () {
         assertBNEqual((await voteManager.getVote(epoch, stakerIdAcc3, assigneedAssetsVotes[0].id - 1)).value, toBigNumber(assigneedAssetsVotes[0].value), 'Vote Stored not equal to submitted one');
 
         const stakeAfter = (await stakeManager.stakers(stakerIdAcc3)).stake;
-        console.log("StakeBefore:", Number(stakeBefore.add(rewardPool)));
-        console.log("StakeAfter:", Number(stakeAfter));
-        console.log(numRevealedAssetsForStaker / blockThisEpoch.ids.length);
-        assertBNEqual(stakeBefore.add(rewardPool.mul(numRevealedAssetsForStaker).div(blockThisEpoch.ids.length)), stakeAfter);
+        assertBNEqual(stakeBefore.add(rewardPool.mul(numRevealedAssetsForStaker3).div(blockThisEpoch.ids.length)), stakeAfter);
       });
 
       it('Should be able to slash if stake is zero', async function () {
         await mineToNextEpoch();
         const epoch = await getEpoch();
+        const maxAssetsPerStaker = Number(await parameters.maxAssetsPerStaker());
+        const numAssets = Number(await assetManager.getNumAssets());
 
         await parameters.setMinStake(0);
         await stakeManager.connect(signers[6]).stake(epoch, tokenAmount('0'));
@@ -461,7 +461,11 @@ describe('VoteManager', function () {
         }
         const balanceBeforeAcc10 = await schellingCoin.balanceOf(signers[10].address);
 
-        await voteManager.connect(signers[10]).reveal(epoch, tree.root(), votes, proof,
+        let assignedAssets = await getAssignedAssets(numAssets, stakerIdAcc6, votes, proof, maxAssetsPerStaker, random);
+        let assigneedAssetsVotes = assignedAssets[0];
+        let assigneedAssetsProofs = assignedAssets[1];
+
+        await voteManager.connect(signers[10]).reveal(epoch, tree.root(), assigneedAssetsVotes, assigneedAssetsProofs,
           '0x727d5c9e6d18ed15ce7ac8d3cce6ec8a0e9c02481415c0823ea49d847ccb9ddd',
           signers[6].address);
 
@@ -475,6 +479,9 @@ describe('VoteManager', function () {
 
       it('Should be able to slash if stake is one', async function () {
         const epoch = await getEpoch();
+        const maxAssetsPerStaker = Number(await parameters.maxAssetsPerStaker());
+        const numAssets = Number(await assetManager.getNumAssets());
+
         await stakeManager.connect(signers[5]).stake(epoch, tokenAmount('1'));
 
         const votes2 = [100, 200, 300, 400, 500, 600, 700, 800, 900];
@@ -497,7 +504,11 @@ describe('VoteManager', function () {
         }
         const balanceBeforeAcc10 = await schellingCoin.balanceOf(signers[10].address);
 
-        await voteManager.connect(signers[10]).reveal(epoch, tree.root(), votes, proof,
+        let assignedAssets = await getAssignedAssets(numAssets, stakerIdAcc5, votes, proof, maxAssetsPerStaker, random);
+        let assigneedAssetsVotes = assignedAssets[0];
+        let assigneedAssetsProofs = assignedAssets[1];
+
+        await voteManager.connect(signers[10]).reveal(epoch, tree.root(), assigneedAssetsVotes, assigneedAssetsProofs,
           '0x727d5c9e6d18ed15ce7ac8d3cce6ec8a0e9c02481415c0823ea49d847ccb9ddd',
           signers[5].address);
 
