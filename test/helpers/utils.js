@@ -18,10 +18,12 @@ const calculateDisputesData = async (voteManager, epoch, sortedVotes, weights, a
   let higherCutoff = toBigNumber('0');
   let weight = toBigNumber('0');
 
+  console.log("Test Weights")
+  console.log(totalStakeRevealed, medianWeight, lowerCutoffWeight, higherCutoffWeight)
   for (let i = 0; i < sortedVotes.length; i++) {
     weight = weight.add(weights[i]);
-    if (weight.gte(medianWeight) && median.eq('0')) median = sortedVotes[i];
-    if (weight.gt(lowerCutoffWeight) && lowerCutoff.eq('0')) lowerCutoff = sortedVotes[i];
+    if (weight.gt(medianWeight) && median.eq('0')) median = sortedVotes[i];
+    if (weight.gte(lowerCutoffWeight) && lowerCutoff.eq('0')) lowerCutoff = sortedVotes[i];
     if (weight.gt(higherCutoffWeight) && higherCutoff.eq('0')) higherCutoff = sortedVotes[i];
   }
 

@@ -33,6 +33,7 @@ describe('StakeManager', function () {
     let stakeManager;
     let rewardManager;
     let voteManager;
+    let assetManager;
     let initializeContracts;
     let stakedToken;
     let random;
@@ -49,6 +50,7 @@ describe('StakeManager', function () {
         rewardManager,
         parameters,
         voteManager,
+        assetManager,
         initializeContracts,
         stakedToken,
         random,

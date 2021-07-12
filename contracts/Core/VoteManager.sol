@@ -93,12 +93,14 @@ contract VoteManager is Initializable, ACL, VoteStorage {
             require(parameters.getState() == parameters.reveal(), "Not reveal state");
             require(thisStaker.stake > 0, "nonpositive stake");
             for (uint256 i = 0; i < values.length; i++) {
-                require(isAssetAllotedToStaker(thisStakerId, i, values[i].id), "Revealed asset not alloted");
-                require(MerkleProof.verify(proofs[i], root, keccak256(abi.encodePacked(values[i].value))),
-                "invalid merkle proof");
-                votes[epoch][thisStakerId][values[i].id-1] = Structs.Vote(values[i].value, thisStaker.stake);
-                voteWeights[epoch][values[i].id-1][values[i].value] = voteWeights[epoch][values[i].id-1][values[i].value]+(thisStaker.stake);
-                totalStakeRevealed[epoch][values[i].id-1] = totalStakeRevealed[epoch][values[i].id-1]+(thisStaker.stake);
+                if (votes[epoch][thisStakerId][values[i].id - 1].weight == 0) { // If Job Not Revealed before 
+                    require(isAssetAllotedToStaker(thisStakerId, i, values[i].id), "Revealed asset not alloted");
+                    require(MerkleProof.verify(proofs[i], root, keccak256(abi.encodePacked(values[i].value))),
+                    "invalid merkle proof");
+                    votes[epoch][thisStakerId][values[i].id-1] = Structs.Vote(values[i].value, thisStaker.stake);
+                    voteWeights[epoch][values[i].id-1][values[i].value] = voteWeights[epoch][values[i].id-1][values[i].value]+(thisStaker.stake);
+                    totalStakeRevealed[epoch][values[i].id-1] = totalStakeRevealed[epoch][values[i].id-1]+(thisStaker.stake);
+                }
             }
 
             rewardManager.giveRewards(thisStakerId, epoch);

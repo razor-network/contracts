@@ -36,10 +36,10 @@ describe('BlockManager', function () {
   let initializeContracts;
   let maxAssetsPerStaker;
   let numAssets;
-  let revealedAssetsThisEpoch = {};
+  let weightsPerRevealedAssets = {};
   let blockThisEpoch = { ids: [], medians: [], lowerCutOffs: [], higherCutOffs: [] };
   let toBeDisputedAssetId = 0;
-
+  let disputedAssetIdIndexInBlock = 0;
   before(async () => {
     ({
       blockManager,
@@ -200,24 +200,62 @@ describe('BlockManager', function () {
         '0x727d5c9e6d18ed15ce7ac8d3cce6ec8a0e9c02481415c0823ea49d847ccb9ddd',
         signers[8].address);
 
+
       // To Form Block Proposal On basis of revealed assets this epoch
+      let assetRevealedByStaker = {}
+      let assetRevealedByStaker2 = {}
+      let assetRevealedByStaker3 = {}
+
       for (let i = 0; i < maxAssetsPerStaker; i++) {
-        revealedAssetsThisEpoch[assigneedAssetsVotes[i].id] = true;
-        revealedAssetsThisEpoch[assigneedAssetsVotes2[i].id] = true;
-        revealedAssetsThisEpoch[assigneedAssetsVotes3[i].id] = true;
+
+        if (typeof weightsPerRevealedAssets[assigneedAssetsVotes[i].id] === "undefined") weightsPerRevealedAssets[assigneedAssetsVotes[i].id] = [];
+        if (typeof weightsPerRevealedAssets[assigneedAssetsVotes2[i].id] === "undefined") weightsPerRevealedAssets[assigneedAssetsVotes2[i].id] = [];
+        if (typeof weightsPerRevealedAssets[assigneedAssetsVotes3[i].id] === "undefined") weightsPerRevealedAssets[assigneedAssetsVotes3[i].id] = [];
+
+        // To have figure how much stake was revealed for that asset
+
+        // Staker 5
+        if (!assetRevealedByStaker[assigneedAssetsVotes[i].id]) {
+          weightsPerRevealedAssets[assigneedAssetsVotes[i].id].push(tokenAmount('420000'));
+          assetRevealedByStaker[assigneedAssetsVotes[i].id] = true;
+        }
+
+        // Staker 6
+        if (!assetRevealedByStaker2[assigneedAssetsVotes2[i].id]) {
+          weightsPerRevealedAssets[assigneedAssetsVotes2[i].id].push(tokenAmount('180000'))
+          assetRevealedByStaker2[assigneedAssetsVotes2[i].id] = true;
+        }
+
+        // Staker 8
+        if (!assetRevealedByStaker3[assigneedAssetsVotes3[i].id]) {
+          weightsPerRevealedAssets[assigneedAssetsVotes3[i].id].push(tokenAmount('180000'))
+          assetRevealedByStaker3[assigneedAssetsVotes3[i].id] = true;
+        }
+
       }
 
-      // Purposefully Proposing invalid value for 1st asset of block
-      let firstAsset = true;
+      // To find a asset id revealed by max no of stakers for better test coverage
+      let maxRevealsForAsset = 0;
+      for (let assetId in weightsPerRevealedAssets) {
+        if (weightsPerRevealedAssets.hasOwnProperty(assetId)) {
+          if (maxRevealsForAsset < weightsPerRevealedAssets[assetId].length) {
+            maxRevealsForAsset = weightsPerRevealedAssets[assetId].length;
+            toBeDisputedAssetId = assetId;
+          }
+        }
+      }
+
+      // Forming block
+      // Purposefully proposing malicious value for assetTobeDisputed
       for (let i = 1; i <= numAssets; i++) {
-        if (revealedAssetsThisEpoch[i]) {
+        if (typeof weightsPerRevealedAssets[i] != "undefined") {
           blockThisEpoch.ids.push(i);
-          firstAsset && (toBeDisputedAssetId = i);
-          // Purposefully Proposing invalid value for 1st asset of block
-          firstAsset ? blockThisEpoch.medians.push(i * 100 + 1) : blockThisEpoch.medians.push(i * 100);
+          if (i == toBeDisputedAssetId) {
+            blockThisEpoch.medians.push(i * 100 + 1); disputedAssetIdIndexInBlock = blockThisEpoch.medians.length
+          }
+          else blockThisEpoch.medians.push(i * 100);
           blockThisEpoch.lowerCutOffs.push(i * 100 - 1);
           blockThisEpoch.higherCutOffs.push(i * 100 + 1);
-          firstAsset = false;
         }
       }
     });
@@ -262,7 +300,8 @@ describe('BlockManager', function () {
       const iteration = await getIteration(stakeManager, random, staker);
 
       // Correcting Invalid Value
-      blockThisEpoch.medians[0] = blockThisEpoch.medians[0] - 1;
+      blockThisEpoch.medians[disputedAssetIdIndexInBlock] = blockThisEpoch.medians[disputedAssetIdIndexInBlock] - 1;
+
       await blockManager.connect(signers[6]).propose(epoch,
         blockThisEpoch.ids,
         blockThisEpoch.medians,
@@ -290,19 +329,29 @@ describe('BlockManager', function () {
       const epoch = await getEpoch();
 
       const sortedVotes = [toBigNumber(toBeDisputedAssetId * 100)];
+      let weights = tokenAmount('0');
+      console.log(weights);
+      for (let i = 0; i < weightsPerRevealedAssets[toBeDisputedAssetId].length; i++) {
+        console.log(weightsPerRevealedAssets[toBeDisputedAssetId][i] / 1);
+        weights = weights.add(weightsPerRevealedAssets[toBeDisputedAssetId][i]);
+      }
       const {
         median, totalStakeRevealed, lowerCutoff, higherCutoff,
       } = await calculateDisputesData(
         voteManager,
         epoch,
         sortedVotes,
-        [tokenAmount('420000'), tokenAmount('18000')], // initial weights,
+        [weights], // initial weights,
         toBeDisputedAssetId - 1
       );
 
       await blockManager.connect(signers[19]).giveSorted(epoch, toBeDisputedAssetId - 1, sortedVotes);
+      console.log(toBeDisputedAssetId);
+      console.log(weights / 1);
+      console.log(median / 1);
 
       const dispute = await blockManager.disputes(epoch, signers[19].address);
+      console.log(dispute.median / 1);
       assertBNEqual(dispute.assetId, toBigNumber(toBeDisputedAssetId - 1), 'assetId should match');
       assertBNEqual(dispute.accWeight, totalStakeRevealed, 'totalStakeRevealed should match');
       assertBNEqual(dispute.median, median, 'median should match');
@@ -397,25 +446,56 @@ describe('BlockManager', function () {
         '0x727d5c9e6d18ed15ce7ac8d3cce6ec8a0e9c02481415c0823ea49d847ccb9ddd',
         signers[7].address);
 
-      // To Form Block Proposal On basis of revealed assets this epoch
-      revealedAssetsThisEpoch = {}
-      for (let i = 0; i < maxAssetsPerStaker; i++) {
-        revealedAssetsThisEpoch[assigneedAssetsVotes[i].id] = true;
-        revealedAssetsThisEpoch[assigneedAssetsVotes2[i].id] = true;
-      }
       blockThisEpoch = { ids: [], medians: [], lowerCutOffs: [], higherCutOffs: [] };
+      weightsPerRevealedAssets = {}
 
-      // Purposefully Proposing invalid value for 1st asset of block
-      let firstAsset = true;
+      // To Form Block Proposal On basis of revealed assets this epoch
+      let assetRevealedByStaker = {}
+      let assetRevealedByStaker2 = {}
+
+      for (let i = 0; i < maxAssetsPerStaker; i++) {
+
+        if (typeof weightsPerRevealedAssets[assigneedAssetsVotes[i].id] === "undefined") weightsPerRevealedAssets[assigneedAssetsVotes[i].id] = [];
+        if (typeof weightsPerRevealedAssets[assigneedAssetsVotes2[i].id] === "undefined") weightsPerRevealedAssets[assigneedAssetsVotes2[i].id] = [];
+
+        // To have figure how much stake was revealed for that asset
+
+        // Staker 6
+        if (!assetRevealedByStaker[assigneedAssetsVotes[i].id]) {
+          weightsPerRevealedAssets[assigneedAssetsVotes[i].id].push(tokenAmount('18000'));
+          assetRevealedByStaker[assigneedAssetsVotes[i].id] = true;
+        }
+
+        // Staker 7
+        if (!assetRevealedByStaker2[assigneedAssetsVotes2[i].id]) {
+          weightsPerRevealedAssets[assigneedAssetsVotes2[i].id].push(tokenAmount('19000'))
+          assetRevealedByStaker2[assigneedAssetsVotes2[i].id] = true;
+        }
+
+      }
+
+      // To find a asset id revealed by max no of stakers for better test coverage
+      let maxRevealsForAsset = 0;
+      for (let assetId in weightsPerRevealedAssets) {
+        if (weightsPerRevealedAssets.hasOwnProperty(assetId)) {
+          if (maxRevealsForAsset < weightsPerRevealedAssets[assetId].length) {
+            maxRevealsForAsset = weightsPerRevealedAssets[assetId].length;
+            toBeDisputedAssetId = assetId;
+          }
+        }
+      }
+
+      // Forming block
+      // Purposefully proposing malicious value for assetTobeDisputed
       for (let i = 1; i <= numAssets; i++) {
-        if (revealedAssetsThisEpoch[i]) {
+        if (typeof weightsPerRevealedAssets[i] != "undefined") {
           blockThisEpoch.ids.push(i);
-          firstAsset && (toBeDisputedAssetId = i);
-          // Purposefully Proposing invalid value for 1st asset of block
-          firstAsset ? blockThisEpoch.medians.push(i * 1000 + 1) : blockThisEpoch.medians.push(i * 1000);
+          if (i == toBeDisputedAssetId) {
+            blockThisEpoch.medians.push(i * 1000 + 1); disputedAssetIdIndexInBlock = blockThisEpoch.medians.length
+          }
+          else blockThisEpoch.medians.push(i * 1000);
           blockThisEpoch.lowerCutOffs.push(i * 1000);
           blockThisEpoch.higherCutOffs.push(i * 1000 + 10);
-          firstAsset = false;
         }
       }
     });
@@ -454,7 +534,29 @@ describe('BlockManager', function () {
 
       await mineToNextState();
 
-      const sortedVotes1 = [toBigNumber(toBeDisputedAssetId * 1000), toBigNumber(toBeDisputedAssetId * 1000 + 10)];
+      let sortedVotes1;
+      let weights;
+      let a = await stakeManager.stakerIds(signers[6].address);
+      let b = await stakeManager.stakerIds(signers[7].address);
+      console.log(a, b);
+      let x = await stakeManager.getStaker(Number(a));
+      let y = await stakeManager.getStaker(Number(b));
+      console.log("Staker 6", x.stake)
+      console.log("Staker 7", y.stake)
+      if (weightsPerRevealedAssets[toBeDisputedAssetId].length == 2) // If toBeDisputedAssetId is revealed by both stakers 
+      {
+        sortedVotes1 = [toBigNumber(toBeDisputedAssetId * 1000), toBigNumber(toBeDisputedAssetId * 1000 + 10)];
+        weights = [tokenAmount('18000'), tokenAmount('19000')];
+      }
+      else if (weightsPerRevealedAssets[toBeDisputedAssetId][0] == tokenAmount('18000')) {
+        sortedVotes1 = [toBigNumber(toBeDisputedAssetId * 1000)];
+        weights = [tokenAmount('18000')];
+      }
+      else {
+        sortedVotes1 = [toBigNumber(toBeDisputedAssetId * 1000 + 10)];
+        weights = [tokenAmount('19000')];
+      }
+
       const {
         median: median1,
         totalStakeRevealed: totalStakeRevealed1,
@@ -464,10 +566,14 @@ describe('BlockManager', function () {
         voteManager,
         epoch,
         sortedVotes1,
-        [tokenAmount('18000'), tokenAmount('19000')], // initial weights
+        weights, // initial weights
         toBeDisputedAssetId - 1
       );
 
+      console.log(blockThisEpoch);
+      console.log(weightsPerRevealedAssets[toBeDisputedAssetId]);
+      console.log(sortedVotes1)
+      console.log(weights)
       await blockManager.connect(signers[19]).giveSorted(epoch, toBeDisputedAssetId - 1, sortedVotes1);
 
       const firstDispute = await blockManager.disputes(epoch, signers[19].address);
@@ -484,8 +590,6 @@ describe('BlockManager', function () {
       let proposedBlock = await blockManager.proposedBlocks(epoch, 0);
       assert((await proposedBlock.valid) === false);
 
-      const sortedVotes2 = [toBigNumber(toBeDisputedAssetId * 1000), toBigNumber(toBeDisputedAssetId * 1000 + 10)];
-
       const {
         median: median2,
         totalStakeRevealed: totalStakeRevealed2,
@@ -494,12 +598,12 @@ describe('BlockManager', function () {
       } = await calculateDisputesData(
         voteManager,
         epoch,
-        sortedVotes2,
-        [tokenAmount('18000'), tokenAmount('19000')], // initial weights
+        sortedVotes1,
+        weights, // initial weights
         toBeDisputedAssetId - 1
       );
 
-      await blockManager.connect(signers[15]).giveSorted(epoch, toBeDisputedAssetId - 1, sortedVotes2);
+      await blockManager.connect(signers[15]).giveSorted(epoch, toBeDisputedAssetId - 1, sortedVotes1);
 
       const secondDispute = await blockManager.disputes(epoch, signers[15].address);
 
@@ -508,7 +612,7 @@ describe('BlockManager', function () {
       assertBNEqual(secondDispute.median, median2, 'median should match');
       assertBNEqual(secondDispute.lowerCutoff, lowerCutoff2, 'lowerCutoff should match');
       assertBNEqual(secondDispute.higherCutoff, higherCutoff2, 'higherCutoff should match');
-      assertBNEqual(secondDispute.lastVisited, sortedVotes2[sortedVotes2.length - 1], 'lastVisited should match');
+      assertBNEqual(secondDispute.lastVisited, sortedVotes1[sortedVotes1.length - 1], 'lastVisited should match');
 
       await blockManager.connect(signers[15]).finalizeDispute(epoch, 1);
       proposedBlock = await blockManager.proposedBlocks(epoch, 1);
@@ -595,7 +699,7 @@ describe('BlockManager', function () {
       const iteration = await getIteration(stakeManager, random, staker);
 
       // To Form Block Proposal On basis of revealed assets this epoch
-      revealedAssetsThisEpoch = {}
+      let revealedAssetsThisEpoch = {}
       for (let i = 0; i < maxAssetsPerStaker; i++) {
         revealedAssetsThisEpoch[assigneedAssetsVotes[i].id] = true;
       }
@@ -709,24 +813,56 @@ describe('BlockManager', function () {
         signers[3].address);
 
       // Propose
-      // To Form Block Proposal On basis of revealed assets this epoch
-      revealedAssetsThisEpoch = {}
-      for (let i = 0; i < maxAssetsPerStaker; i++) {
-        revealedAssetsThisEpoch[assigneedAssetsVotes[i].id] = true;
-        revealedAssetsThisEpoch[assigneedAssetsVotes2[i].id] = true;
-      }
       blockThisEpoch = { ids: [], medians: [], lowerCutOffs: [], higherCutOffs: [] };
-      // Purposefully Proposing invalid value for 1st asset of block
-      let firstAsset = true;
+      weightsPerRevealedAssets = {}
+
+      // To Form Block Proposal On basis of revealed assets this epoch
+      let assetRevealedByStaker = {}
+      let assetRevealedByStaker2 = {}
+
+      for (let i = 0; i < maxAssetsPerStaker; i++) {
+
+        if (typeof weightsPerRevealedAssets[assigneedAssetsVotes[i].id] === "undefined") weightsPerRevealedAssets[assigneedAssetsVotes[i].id] = [];
+        if (typeof weightsPerRevealedAssets[assigneedAssetsVotes2[i].id] === "undefined") weightsPerRevealedAssets[assigneedAssetsVotes2[i].id] = [];
+
+        // To have figure how much stake was revealed for that asset
+
+        // Staker 2
+        if (!assetRevealedByStaker[assigneedAssetsVotes[i].id]) {
+          weightsPerRevealedAssets[assigneedAssetsVotes[i].id].push(tokenAmount('420000'));
+          assetRevealedByStaker[assigneedAssetsVotes[i].id] = true;
+        }
+
+        // Staker 3
+        if (!assetRevealedByStaker2[assigneedAssetsVotes2[i].id]) {
+          weightsPerRevealedAssets[assigneedAssetsVotes2[i].id].push(tokenAmount('18000'))
+          assetRevealedByStaker2[assigneedAssetsVotes2[i].id] = true;
+        }
+
+      }
+
+      // To find a asset id revealed by max no of stakers for better test coverage
+      let maxRevealsForAsset = 0;
+      for (let assetId in weightsPerRevealedAssets) {
+        if (weightsPerRevealedAssets.hasOwnProperty(assetId)) {
+          if (maxRevealsForAsset < weightsPerRevealedAssets[assetId].length) {
+            maxRevealsForAsset = weightsPerRevealedAssets[assetId].length;
+            toBeDisputedAssetId = assetId;
+          }
+        }
+      }
+
+      // Forming block
+      // Purposefully proposing malicious value for assetTobeDisputed
       for (let i = 1; i <= numAssets; i++) {
-        if (revealedAssetsThisEpoch[i]) {
+        if (typeof weightsPerRevealedAssets[i] != "undefined") {
           blockThisEpoch.ids.push(i);
-          firstAsset && (toBeDisputedAssetId = i);
-          // Purposefully Proposing invalid value for 1st asset of block
-          firstAsset ? blockThisEpoch.medians.push(i * 1000 + 1) : blockThisEpoch.medians.push(i * 100);
+          if (i == toBeDisputedAssetId) {
+            blockThisEpoch.medians.push(i * 1000 + 1); disputedAssetIdIndexInBlock = blockThisEpoch.medians.length
+          }
+          else blockThisEpoch.medians.push(i * 100);
           blockThisEpoch.lowerCutOffs.push(i * 100 - 1);
           blockThisEpoch.higherCutOffs.push(i * 100 + 1);
-          firstAsset = false;
         }
       }
 
@@ -750,25 +886,45 @@ describe('BlockManager', function () {
       // Calculate Dispute data
       await mineToNextState();
       epoch = await getEpoch();
-      const sortedVotes = [toBigNumber(votes[toBeDisputedAssetId - 1]), toBigNumber(votes2[toBeDisputedAssetId - 1])];
+
+      let sortedVotes;
+      let weights;
+      if (weightsPerRevealedAssets[toBeDisputedAssetId].length == 2) // If toBeDisputedAssetId is revealed by both stakers 
+      {
+        sortedVotes = [toBigNumber(votes[toBeDisputedAssetId - 1]), toBigNumber(votes2[toBeDisputedAssetId - 1])];
+        weights = [tokenAmount('420000'), tokenAmount('18000')];
+      }
+      else if (weightsPerRevealedAssets[toBeDisputedAssetId][0] == tokenAmount('420000')) {
+        sortedVotes = [toBigNumber(votes[toBeDisputedAssetId - 1])];
+        weights = [tokenAmount('420000')];
+      }
+      else {
+        sortedVotes = [toBigNumber(votes2[toBeDisputedAssetId - 1])];
+        weights = [tokenAmount('18000')];
+      }
+
       const {
         median, totalStakeRevealed, lowerCutoff, higherCutoff,
       } = await calculateDisputesData(
         voteManager,
         epoch,
         sortedVotes,
-        [tokenAmount('420000'), tokenAmount('18000')], // initial weights
+        weights, // initial weights
         toBeDisputedAssetId - 1
       );
 
       // Dispute in batches
-      await blockManager.connect(signers[19]).giveSorted(epoch, toBeDisputedAssetId - 1, [sortedVotes[0]]);
-      await blockManager.connect(signers[19]).giveSorted(epoch, toBeDisputedAssetId - 1, [sortedVotes[1]]);
+      if (sortedVotes.length == 2) {
+        await blockManager.connect(signers[19]).giveSorted(epoch, toBeDisputedAssetId - 1, [sortedVotes[0]]);
+        await blockManager.connect(signers[19]).giveSorted(epoch, toBeDisputedAssetId - 1, [sortedVotes[1]]);
+      }
+      else
+        await blockManager.connect(signers[19]).giveSorted(epoch, toBeDisputedAssetId - 1, [sortedVotes[0]]);
 
 
       const dispute = await blockManager.disputes(epoch, signers[19].address);
 
-      assertBNEqual(dispute.assetId, toBigNumber('1'), 'assetId should match');
+      assertBNEqual(dispute.assetId, toBigNumber(toBeDisputedAssetId - 1), 'assetId should match');
       assertBNEqual(dispute.accWeight, totalStakeRevealed, 'totalStakeRevealed should match');
       assertBNEqual(dispute.median, median, 'median should match');
       assertBNEqual(dispute.lowerCutoff, lowerCutoff, 'lowerCutoff should match');
