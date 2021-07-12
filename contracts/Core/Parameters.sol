@@ -24,7 +24,9 @@ contract Parameters is IParameters, ACL {
     uint256 public override aggregationRange = 3;
     uint256 public override withdrawReleasePeriod = 5;
     uint256 public override resetLockPenalty = 1;
-
+    // Note : maxAssetsPerStaker should be less than total no of jobs
+    uint256 public override maxAssetsPerStaker = 2;
+    
     uint32 constant private _COMMIT = 0;
     uint32 constant private _REVEAL = 1;
     uint32 constant private _PROPOSE = 2;
@@ -102,6 +104,10 @@ contract Parameters is IParameters, ACL {
 
     function setAggregationRange(uint256 _aggregationRange) external onlyRole(DEFAULT_ADMIN_ROLE) {
         aggregationRange = _aggregationRange;
+    }
+
+    function setmaxAssetsPerStaker(uint256 _maxAssetsPerStaker) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        maxAssetsPerStaker = _maxAssetsPerStaker;
     }
 
     function getEpoch() external view override returns (uint256) {

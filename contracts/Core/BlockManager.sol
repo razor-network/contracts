@@ -197,7 +197,7 @@ contract BlockManager is Initializable, ACL, BlockStorage {
             require(sorted[i] > lastVisited, "sorted[i] is not greater than lastVisited");
             lastVisited = sorted[i];
             accWeight = accWeight + (voteManager.getVoteWeight(epoch, assetId, sorted[i]));
-
+            
             if (disputes[epoch][msg.sender].lowerCutoff == 0 && accWeight >= lowerCutoffWeight) {
                 disputes[epoch][msg.sender].lowerCutoff = sorted[i];
             }

@@ -23,6 +23,7 @@ interface IParameters {
     function exposureDenominator() external view returns(uint256);
     function slashPenaltyNum() external view returns(uint256);
     function slashPenaltyDenom() external view returns(uint256);
+    function maxAssetsPerStaker() external view returns(uint256);
     function getEpoch() external view returns(uint256);
     function getState() external view returns(uint256);
 
