@@ -102,6 +102,17 @@ describe('StakeManager', function () {
       assertBNEqual(await sToken.balanceOf(staker._address), stake1, 'Amount of minted sRzR is not correct');
     });
 
+    it('should not be able to stake if amount is too low', async function () {
+      const stakeAmounts = ['0', '1', '99'];
+      for (let i = 0; i < stakeAmounts.length; i++) {
+        const signer = signers[i + 1];
+        const stake = tokenAmount(stakeAmounts[i]);
+        await schellingCoin.connect(signer).approve(stakeManager.address, stake);
+        const tx = stakeManager.connect(signer).stake(await getEpoch(), stake);
+        await assertRevert(tx, 'staked amount is less than minimum stake required');
+      }
+    });
+
     it('should handle second staker correctly', async function () {
       const epoch = await getEpoch();
       const stake = tokenAmount('19000');
