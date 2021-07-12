@@ -26,7 +26,7 @@ const setupContracts = async () => {
   const VoteManager = await ethers.getContractFactory('VoteManager', {
     libraries: {
       Random: random.address,
-    }
+    },
   });
 
   const parameters = await Parameters.deploy();
@@ -55,7 +55,7 @@ const setupContracts = async () => {
     voteManager.initialize(stakeManager.address, rewardManager.address, blockManager.address, parameters.address, assetManager.address),
     stakeManager.initialize(schellingCoin.address, rewardManager.address, voteManager.address, parameters.address),
     rewardManager.initialize(stakeManager.address, voteManager.address, blockManager.address, parameters.address),
-    
+
     assetManager.grantRole(await parameters.getAssetConfirmerHash(), blockManager.address),
     blockManager.grantRole(await parameters.getBlockConfirmerHash(), voteManager.address),
     rewardManager.grantRole(await parameters.getRewardModifierHash(), blockManager.address),

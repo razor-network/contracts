@@ -10,7 +10,7 @@ import "./storage/BlockStorage.sol";
 import "../lib/Random.sol";
 import "../Initializable.sol";
 import "./ACL.sol";
-import "hardhat/console.sol";
+
 
 contract BlockManager is Initializable, ACL, BlockStorage {
     
@@ -186,8 +186,6 @@ contract BlockManager is Initializable, ACL, BlockStorage {
         uint256 medianWeight = voteManager.getTotalStakeRevealed(epoch, assetId)/(2);
         uint256 lowerCutoffWeight = voteManager.getTotalStakeRevealed(epoch, assetId)/(4);
         uint256 higherCutoffWeight = (voteManager.getTotalStakeRevealed(epoch, assetId)*(3))/(4);
-
-        console.log(medianWeight, lowerCutoffWeight, higherCutoffWeight);
         uint256 accWeight = disputes[epoch][msg.sender].accWeight;
         uint256 lastVisited = disputes[epoch][msg.sender].lastVisited;
         if (disputes[epoch][msg.sender].accWeight == 0) {
@@ -199,8 +197,7 @@ contract BlockManager is Initializable, ACL, BlockStorage {
             require(sorted[i] > lastVisited, "sorted[i] is not greater than lastVisited");
             lastVisited = sorted[i];
             accWeight = accWeight + (voteManager.getVoteWeight(epoch, assetId, sorted[i]));
-            console.log("weight", sorted[i], voteManager.getVoteWeight(epoch, assetId, sorted[i]));
-          
+            
             if (disputes[epoch][msg.sender].lowerCutoff == 0 && accWeight >= lowerCutoffWeight) {
                 disputes[epoch][msg.sender].lowerCutoff = sorted[i];
             }
@@ -238,7 +235,6 @@ contract BlockManager is Initializable, ACL, BlockStorage {
         uint256 higherCutoff = disputes[epoch][msg.sender].higherCutoff;
         uint256 proposerId = proposedBlocks[epoch][blockId].proposerId;
         //
-        console.log("median", median);
         require(median > 0, "median can't be zero");
         if (proposedBlocks[epoch][blockId].medians[assetId] != median ||
             proposedBlocks[epoch][blockId].lowerCutoffs[assetId] != lowerCutoff ||

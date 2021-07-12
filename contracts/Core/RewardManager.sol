@@ -8,7 +8,6 @@ import "./interface/IVoteManager.sol";
 import "./storage/RewardStorage.sol";
 import "../Initializable.sol";
 import "./ACL.sol";
-import "hardhat/console.sol";
 
 /// @title StakeManager
 /// @notice StakeManager handles stake, unstake, withdraw, reward, functions
@@ -157,8 +156,6 @@ contract RewardManager is Initializable, ACL, RewardStorage {
                 }
             }
 
-            console.log("Print",thisStaker.stake, rewardPool);
-            console.log(rewardable, stakeGettingReward, blockLastEpoch.lowerCutoffs.length);
             uint256 reward = (thisStaker.stake * rewardPool * rewardable) /
                 (stakeGettingReward * blockLastEpoch.lowerCutoffs.length);
             if (reward > 0) {

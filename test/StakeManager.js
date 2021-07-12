@@ -20,7 +20,7 @@ const {
   tokenAmount,
   getBiggestStakeAndId,
   getIteration,
-  getAssignedAssets
+  getAssignedAssets,
 } = require('./helpers/utils');
 const { setupContracts } = require('./helpers/testSetup');
 
@@ -40,7 +40,9 @@ describe('StakeManager', function () {
     let maxAssetsPerStaker;
     let numAssets;
     let revealedAssetsThisEpoch = {};
-    let blockThisEpoch = { ids: [], medians: [], lowerCutOffs: [], higherCutOffs: [] };
+    let blockThisEpoch = {
+      ids: [], medians: [], lowerCutOffs: [], higherCutOffs: [],
+    };
 
     before(async () => {
       ({
@@ -88,7 +90,7 @@ describe('StakeManager', function () {
       const name = 'test';
       const repeat = true;
       let i = 0;
-      while (i < 9) { await assetManager.createJob(url, selector, name, repeat); i++; };
+      while (i < 9) { await assetManager.createJob(url, selector, name, repeat); i++; }
       // By default its 2 setting it 5
       await parameters.setmaxAssetsPerStaker(5);
       maxAssetsPerStaker = Number(await parameters.maxAssetsPerStaker());
@@ -251,9 +253,9 @@ describe('StakeManager', function () {
         proof.push(tree.getProofPath(i, true, true));
       }
 
-      let assignedAssets = await getAssignedAssets(numAssets, await stakeManager.stakerIds(signers[2].address), votes, proof, maxAssetsPerStaker, random);
-      let assigneedAssetsVotes = assignedAssets[0];
-      let assigneedAssetsProofs = assignedAssets[1];
+      const assignedAssets = await getAssignedAssets(numAssets, await stakeManager.stakerIds(signers[2].address), votes, proof, maxAssetsPerStaker, random);
+      const assigneedAssetsVotes = assignedAssets[0];
+      const assigneedAssetsProofs = assignedAssets[1];
 
       await voteManager.connect(signers[2]).reveal(epoch, tree.root(), assigneedAssetsVotes, assigneedAssetsProofs,
         '0x727d5c9e6d18ed15ce7ac8d3cce6ec8a0e9c02481415c0823ea49d847ccb9ddd',
@@ -297,9 +299,9 @@ describe('StakeManager', function () {
         proof.push(tree.getProofPath(i, true, true));
       }
 
-      let assignedAssets = await getAssignedAssets(numAssets, await stakeManager.stakerIds(signers[3].address), votes, proof, maxAssetsPerStaker, random);
-      let assigneedAssetsVotes = assignedAssets[0];
-      let assigneedAssetsProofs = assignedAssets[1];
+      const assignedAssets = await getAssignedAssets(numAssets, await stakeManager.stakerIds(signers[3].address), votes, proof, maxAssetsPerStaker, random);
+      const assigneedAssetsVotes = assignedAssets[0];
+      const assigneedAssetsProofs = assignedAssets[1];
 
       await voteManager.connect(signers[3]).reveal(epoch, tree.root(), assigneedAssetsVotes, assigneedAssetsProofs,
         '0x727d5c9e6d18ed15ce7ac8d3cce6ec8a0e9c02481415c0823ea49d847ccb9ddd',
@@ -339,9 +341,9 @@ describe('StakeManager', function () {
         proof.push(tree.getProofPath(i, true, true));
       }
 
-      let assignedAssets = await getAssignedAssets(numAssets, await stakeManager.stakerIds(signers[3].address), votes, proof, maxAssetsPerStaker, random);
-      let assigneedAssetsVotes = assignedAssets[0];
-      let assigneedAssetsProofs = assignedAssets[1];
+      const assignedAssets = await getAssignedAssets(numAssets, await stakeManager.stakerIds(signers[3].address), votes, proof, maxAssetsPerStaker, random);
+      const assigneedAssetsVotes = assignedAssets[0];
+      const assigneedAssetsProofs = assignedAssets[1];
 
       await voteManager.connect(signers[3]).reveal(epoch, tree.root(), assigneedAssetsVotes, assigneedAssetsProofs,
         '0x727d5c9e6d18ed15ce7ac8d3cce6ec8a0e9c02481415c0823ea49d847ccb9ddd',
@@ -526,9 +528,9 @@ describe('StakeManager', function () {
           proof.push(tree.getProofPath(i, true, true));
         }
 
-        let assignedAssets = await getAssignedAssets(numAssets, await stakeManager.stakerIds(signers[4].address), votes, proof, maxAssetsPerStaker, random);
-        let assigneedAssetsVotes = assignedAssets[0];
-        let assigneedAssetsProofs = assignedAssets[1];
+        const assignedAssets = await getAssignedAssets(numAssets, await stakeManager.stakerIds(signers[4].address), votes, proof, maxAssetsPerStaker, random);
+        const assigneedAssetsVotes = assignedAssets[0];
+        const assigneedAssetsProofs = assignedAssets[1];
 
         await voteManager.connect(signers[4]).reveal(epoch, tree.root(), assigneedAssetsVotes, assigneedAssetsProofs,
           '0x727d5c9e6d18ed15ce7ac8d3cce6ec8a0e9c02481415c0823ea49d847ccb9ddd',
@@ -536,11 +538,13 @@ describe('StakeManager', function () {
 
         // propose
         // To Form Block Proposal On basis of revealed assets this epoch
-        revealedAssetsThisEpoch = {}
+        revealedAssetsThisEpoch = {};
         for (let i = 0; i < maxAssetsPerStaker; i++) {
           revealedAssetsThisEpoch[assigneedAssetsVotes[i].id] = true;
         }
-        blockThisEpoch = { ids: [], medians: [], lowerCutOffs: [], higherCutOffs: [] };
+        blockThisEpoch = {
+          ids: [], medians: [], lowerCutOffs: [], higherCutOffs: [],
+        };
         for (let i = 1; i <= numAssets; i++) {
           if (revealedAssetsThisEpoch[i]) {
             blockThisEpoch.ids.push(i);
@@ -648,9 +652,9 @@ describe('StakeManager', function () {
           proof.push(tree.getProofPath(i, true, true));
         }
 
-        let assignedAssets = await getAssignedAssets(numAssets, await stakeManager.stakerIds(signers[4].address), votes, proof, maxAssetsPerStaker, random);
-        let assigneedAssetsVotes = assignedAssets[0];
-        let assigneedAssetsProofs = assignedAssets[1];
+        const assignedAssets = await getAssignedAssets(numAssets, await stakeManager.stakerIds(signers[4].address), votes, proof, maxAssetsPerStaker, random);
+        const assigneedAssetsVotes = assignedAssets[0];
+        const assigneedAssetsProofs = assignedAssets[1];
 
         await voteManager.connect(signers[4]).reveal(epoch, tree.root(), assigneedAssetsVotes, assigneedAssetsProofs,
           '0x727d5c9e6d18ed15ce7ac8d3cce6ec8a0e9c02481415c0823ea49d847ccb9ddd',

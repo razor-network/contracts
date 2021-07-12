@@ -18,8 +18,8 @@ const calculateDisputesData = async (voteManager, epoch, sortedVotes, weights, a
   let higherCutoff = toBigNumber('0');
   let weight = toBigNumber('0');
 
-  console.log("Test Weights")
-  console.log(totalStakeRevealed, medianWeight, lowerCutoffWeight, higherCutoffWeight)
+  console.log('Test Weights');
+  console.log(totalStakeRevealed, medianWeight, lowerCutoffWeight, higherCutoffWeight);
   for (let i = 0; i < sortedVotes.length; i++) {
     weight = weight.add(weights[i]);
     if (weight.gt(medianWeight) && median.eq('0')) median = sortedVotes[i];
@@ -102,8 +102,8 @@ const getState = async () => {
 };
 
 const getAssignedAssets = async (numAssets, stakerId, votes, proofs, maxAssetsPerStaker, random) => {
-  let assignedAssetsVotes = []
-  let assignedAssetsProofs = [];
+  const assignedAssetsVotes = [];
+  const assignedAssetsProofs = [];
 
   const blockHashes = await random.blockHashes(NUM_BLOCKS, EPOCH_LENGTH);
   let assetId;
@@ -111,17 +111,17 @@ const getAssignedAssets = async (numAssets, stakerId, votes, proofs, maxAssetsPe
   for (let i = 0; i < maxAssetsPerStaker; i++) {
     seed = await web3.utils.soliditySha3(+stakerId + i);
     assetId = +(await prng(seed, numAssets, blockHashes)) + 1;
-    assignedAssetsVotes.push({ "id": assetId, "value": votes[assetId - 1] });
+    assignedAssetsVotes.push({ id: assetId, value: votes[assetId - 1] });
     assignedAssetsProofs.push(proofs[assetId - 1]);
   }
   return [assignedAssetsVotes, assignedAssetsProofs];
 };
 
 const getNumRevealedAssets = async (assignedAssetsVotes) => {
-  let isExist = {};
+  const isExist = {};
   let numRevealedAssetsForStaker = 0;
   for (let i = 0; i < assignedAssetsVotes.length; i++) {
-    if (typeof isExist[assignedAssetsVotes[i].id] === "undefined") {
+    if (typeof isExist[assignedAssetsVotes[i].id] === 'undefined') {
       isExist[assignedAssetsVotes[i].id] = true;
       numRevealedAssetsForStaker++;
     }
@@ -141,5 +141,5 @@ module.exports = {
   toBigNumber,
   tokenAmount,
   getAssignedAssets,
-  getNumRevealedAssets
+  getNumRevealedAssets,
 };

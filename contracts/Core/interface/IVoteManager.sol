@@ -36,6 +36,4 @@ interface IVoteManager {
         uint256 assetId,
         uint256 voteValue
     ) external view returns(uint256);
-
-    function TEST_getAssetIds(uint256 stakerId) external;
 }

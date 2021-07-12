@@ -24,7 +24,6 @@ contract Parameters is IParameters, ACL {
     uint256 public override aggregationRange = 3;
     uint256 public override withdrawReleasePeriod = 5;
     uint256 public override resetLockPenalty = 1;
-
     // Note : maxAssetsPerStaker should be less than total no of jobs
     uint256 public override maxAssetsPerStaker = 2;
     
