@@ -121,7 +121,6 @@ contract BlockManager is Initializable, ACL, BlockStorage {
     //we use a probabilistic method to elect stakers weighted by stake
     // protocol works like this. 
     //select a staker pseudorandomly (not weighted by anything)
-    // (todo what if it is below min stake)
     // that staker then tosses a biased coin. 
     //bias = hisStake/biggestStake. if its heads, he can propose block
     // end of iteration. try next iteration
@@ -214,7 +213,6 @@ contract BlockManager is Initializable, ACL, BlockStorage {
         disputes[epoch][msg.sender].accWeight = accWeight;
     }
 
-    // //todo test
     // //if any mistake made during giveSorted, resetDispute and start again
     function resetDispute(
         uint256 epoch

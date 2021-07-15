@@ -10,7 +10,6 @@ interface IBlockManager {
     //we use a probabilistic method to elect stakers weighted by stake
     // protocol works like this. 
     //select a staker pseudorandomly (not weighted by anything)
-    // (todo what if it is below min stake)
     // that staker then tosses a biased coin. 
     //bias = hisStake/biggestStake. if its heads, he can propose block
     // end of iteration. try next iteration
