@@ -108,16 +108,16 @@ describe('AssetManager', function () {
     });
 
     it('should be able to inactivate Job', async function () {
-      await assetManager.updateAssetStatus(5, true);
+      await assetManager.setAssetStatus(5, false);
       const job = await assetManager.jobs(5);
       assert(job.active === false);
     });
 
     it('should be able to reactivate Job', async function () {
-      await assetManager.updateAssetStatus(5, false);
+      await assetManager.setAssetStatus(5, true);
       const job = await assetManager.jobs(5);
       assert(job.active === true);
-      await assetManager.updateAssetStatus(5, 0);
+      await assetManager.setAssetStatus(5, 1);
     });
 
     it('should be able remove job from collection', async function () {
@@ -130,16 +130,16 @@ describe('AssetManager', function () {
     it('should be able to inactivate collection', async function () {
       const collectionName = 'Test Collection6';
       await assetManager.createCollection(collectionName, [1, 2], 2);
-      await assetManager.updateAssetStatus(6, true);
+      await assetManager.setAssetStatus(6, false);
       const collection = await assetManager.getCollection(6);
       assert(collection.active === false);
     });
 
     it('should be able to reactivate collection', async function () {
-      await assetManager.updateAssetStatus(6, false);
+      await assetManager.setAssetStatus(6, true);
       const collection = await assetManager.getCollection(6);
       assert(collection.active === true);
-      await assetManager.updateAssetStatus(6, true);
+      await assetManager.setAssetStatus(6, false);
     });
 
     it('should not be able to remove or add job to collection if the collection has been inactivated', async function () {
@@ -158,12 +158,12 @@ describe('AssetManager', function () {
     });
 
     it('should not be able to update activity status of asset if assetID is 0', async function () {
-      const tx = assetManager.updateAssetStatus(0, 0);
+      const tx = assetManager.setAssetStatus(0, 1);
       await assertRevert(tx, 'ID cannot be 0');
     });
 
     it('should not be able to update activity status of asset if assetID does not exist', async function () {
-      const tx = assetManager.updateAssetStatus(100, 0);
+      const tx = assetManager.setAssetStatus(100, 1);
       await assertRevert(tx, 'ID does not exist');
     });
 

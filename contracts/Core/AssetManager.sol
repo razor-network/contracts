@@ -155,9 +155,9 @@ contract AssetManager is ACL, AssetStorage {
 
     }
 
-    function updateAssetStatus(
+    function setAssetStatus(
         uint256 id,
-        bool isActive
+        bool assetStatus
     ) 
         external 
         onlyRole(parameters.getAssetModifierHash()) 
@@ -168,12 +168,7 @@ contract AssetManager is ACL, AssetStorage {
         uint256 epoch = parameters.getEpoch();
 
         if(jobs[id].assetType == uint256(assetTypes.Job)){
-            if(isActive){
-                jobs[id].active = false;
-            }
-            else{
-                jobs[id].active = true;
-            }
+            jobs[id].active = assetStatus;
 
             emit JobActivityStatus(
             id,
@@ -183,12 +178,7 @@ contract AssetManager is ACL, AssetStorage {
             );
         }
         else{
-            if(isActive){
-                collections[id].active = false;
-            }
-            else{
-                collections[id].active = true;
-            }
+            collections[id].active = assetStatus;
 
             emit CollectionActivityStatus(
             id,
